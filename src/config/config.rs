@@ -115,7 +115,7 @@ impl Default for OptionsConfig {
             show_skipped_downloads: true,
             use_duplicate_threshold: false,
             timeline_retries: 1,
-            timeline_delay_seconds: 60,
+            timeline_delay_seconds: 10,
             single_post_id: None,
         }
     }

@@ -123,6 +123,7 @@ impl FanslyApi {
 
         let response = self.client
             .get(&url)
+            .query(&[("ngsw-bypass", "true")])
             .headers(headers)
             .send()
             .await?;
@@ -207,9 +208,20 @@ impl FanslyApi {
     /// Get message groups.
     pub async fn get_groups(&self) -> Result<Vec<MessageGroup>> {
         let response = self.get("/api/v1/group").await?;
+        let status = response.status();
         let text = response.text().await?;
         tracing::debug!("Groups response: {}", text);
 
+        // Handle 400 error with "missing groupId" - means no groups exist
+        if status == 400 {
+            if text.contains("missing groupId") {
+                tracing::debug!("No message groups found");
+                return Ok(Vec::new());
+            }
+            return Err(Error::Api(format!("Failed to get groups: HTTP {} - {}", status, text)));
+        }
+
+        // Parse successful response
         let api_response: ApiResponse<GroupsResponse> = serde_json::from_str(&text)
             .map_err(|e| Error::Api(format!("Failed to parse groups: {} - Response: {}", e, text)))?;
 

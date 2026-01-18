@@ -9,7 +9,7 @@ use crate::api::{FanslyApi, BATCH_SIZE};
 use crate::config::Config;
 use crate::download::media::download_media_item;
 use crate::download::state::DownloadState;
-use crate::error::{Error, Result};
+use crate::error::Result;
 use crate::fs::paths::get_download_path;
 use crate::media::{extract_media_ids, parse_media_info};
 
@@ -33,8 +33,18 @@ pub async fn download_messages(
     let groups = api.get_groups().await?;
     let group = groups
         .iter()
-        .find(|g| g.users.iter().any(|u| u.user_id == creator_id))
-        .ok_or_else(|| Error::Api("No message group found with this creator".into()))?;
+        .find(|g| g.users.iter().any(|u| u.user_id == creator_id));
+
+    let group = match group {
+        Some(g) => g,
+        None => {
+            tracing::info!(
+                "No chat history with {}",
+                state.creator_name.as_deref().unwrap_or("this creator")
+            );
+            return Ok(());
+        }
+    };
 
     let group_id = group.id.clone();
     let mut cursor = "0".to_string();

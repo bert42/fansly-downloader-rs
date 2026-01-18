@@ -101,7 +101,15 @@ impl MediaItem {
 
     /// Format the creation timestamp for filename.
     fn format_timestamp(&self) -> String {
-        let dt: DateTime<Utc> = Utc.timestamp_millis_opt(self.created_at).unwrap();
+        // API returns timestamps in milliseconds
+        // For older content, timestamps might be in seconds (< year 2001 threshold)
+        let timestamp_ms = if self.created_at < 1_000_000_000_000 {
+            // Timestamp appears to be in seconds, convert to milliseconds
+            self.created_at * 1000
+        } else {
+            self.created_at
+        };
+        let dt: DateTime<Utc> = Utc.timestamp_millis_opt(timestamp_ms).unwrap();
         dt.format("%Y-%m-%dT%H-%M-%S").to_string()
     }
 
