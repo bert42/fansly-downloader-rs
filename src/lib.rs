@@ -1,4 +1,4 @@
-//! Fansly Downloader RS - A Rust implementation of fansly-downloader-ng
+//! Fansly Downloader RS - A Rust implementation of fansly downloader
 //!
 //! This library provides functionality for downloading media content from Fansly creators.
 //!

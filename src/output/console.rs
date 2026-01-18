@@ -31,8 +31,7 @@ pub fn print_debug(message: &str) {
 pub fn print_banner() {
     let banner = r#"
 ╔═══════════════════════════════════════════════════════╗
-║     Fansly Downloader RS                              ║
-║     A Rust implementation of fansly-downloader-ng     ║
+║     Fansly Downloader                                 ║
 ╚═══════════════════════════════════════════════════════╝
 "#;
     println!("{}", style(banner).cyan());

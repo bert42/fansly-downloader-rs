@@ -2,8 +2,6 @@
 
 A Rust CLI tool to download photos, videos, and audio from Fansly creators.
 
-This is a Rust reimplementation of [fansly-downloader-ng](https://github.com/prof79/fansly-downloader-ng), offering improved performance and a single binary distribution.
-
 ## Features
 
 - **Multiple Download Modes**: Timeline posts, direct messages, single posts, and purchased collections
