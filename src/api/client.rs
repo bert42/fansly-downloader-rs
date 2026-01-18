@@ -1,7 +1,5 @@
 //! Fansly API HTTP client.
 
-use std::sync::Arc;
-
 use reqwest::{header, Client, Response};
 use tokio::sync::RwLock;
 
@@ -17,15 +15,20 @@ const API_BASE: &str = "https://apiv3.fansly.com";
 pub const BATCH_SIZE: usize = 150;
 
 /// Fansly API client with authentication and session management.
+///
+/// Uses interior mutability (RwLock) for fields that may change during operation:
+/// - `device_id`: May need refresh after expiration
+/// - `device_id_timestamp`: Tracks when device_id was obtained
+/// - `client_timestamp`: Updated on each request
 pub struct FanslyApi {
     client: Client,
     token: String,
     user_agent: String,
     check_key: String,
     session_id: String,
-    device_id: Arc<RwLock<Option<String>>>,
-    device_id_timestamp: Arc<RwLock<Option<i64>>>,
-    client_timestamp: Arc<RwLock<i64>>,
+    device_id: RwLock<Option<String>>,
+    device_id_timestamp: RwLock<Option<i64>>,
+    client_timestamp: RwLock<i64>,
 }
 
 impl FanslyApi {
@@ -52,9 +55,9 @@ impl FanslyApi {
             user_agent,
             check_key,
             session_id,
-            device_id: Arc::new(RwLock::new(device_id)),
-            device_id_timestamp: Arc::new(RwLock::new(device_id_timestamp)),
-            client_timestamp: Arc::new(RwLock::new(get_client_timestamp())),
+            device_id: RwLock::new(device_id),
+            device_id_timestamp: RwLock::new(device_id_timestamp),
+            client_timestamp: RwLock::new(get_client_timestamp()),
         };
 
         // Ensure we have a valid device ID

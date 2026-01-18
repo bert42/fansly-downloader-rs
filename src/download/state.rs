@@ -1,9 +1,10 @@
 //! Download state tracking.
 
-use std::collections::HashSet;
 use std::path::PathBuf;
 
 use crate::config::DownloadType;
+use crate::dedup::DedupService;
+use crate::media::MediaType;
 
 /// Per-creator download state.
 #[derive(Debug, Default)]
@@ -21,18 +22,10 @@ pub struct DownloadState {
     // Current download type
     pub download_type: DownloadType,
 
-    // Deduplication tracking - media IDs
-    pub recent_photo_media_ids: HashSet<String>,
-    pub recent_video_media_ids: HashSet<String>,
-    pub recent_audio_media_ids: HashSet<String>,
-
-    // Deduplication tracking - file hashes
-    pub recent_photo_hashes: HashSet<String>,
-    pub recent_video_hashes: HashSet<String>,
-    pub recent_audio_hashes: HashSet<String>,
+    // Unified deduplication service
+    pub dedup: DedupService,
 
     // Statistics
-    pub duplicate_count: u64,
     pub pic_count: u64,
     pub vid_count: u64,
     pub audio_count: u64,
@@ -58,69 +51,34 @@ impl DownloadState {
             .ok_or_else(|| crate::error::Error::Api("Creator ID not set".into()))
     }
 
-    /// Check if a media ID has already been downloaded (image).
-    pub fn is_photo_id_seen(&self, id: &str) -> bool {
-        self.recent_photo_media_ids.contains(id)
+    /// Check if a media ID has already been seen.
+    pub fn is_id_seen(&self, id: &str, media_type: MediaType) -> bool {
+        self.dedup.is_id_seen(id, media_type)
     }
 
-    /// Check if a media ID has already been downloaded (video).
-    pub fn is_video_id_seen(&self, id: &str) -> bool {
-        self.recent_video_media_ids.contains(id)
+    /// Mark a media ID as seen.
+    pub fn mark_id_seen(&mut self, id: String, media_type: MediaType) {
+        self.dedup.mark_id_seen(id, media_type);
     }
 
-    /// Check if a media ID has already been downloaded (audio).
-    pub fn is_audio_id_seen(&self, id: &str) -> bool {
-        self.recent_audio_media_ids.contains(id)
+    /// Check if a file hash has been seen.
+    pub fn is_hash_seen(&self, hash: &str, media_type: MediaType) -> bool {
+        self.dedup.is_hash_seen(hash, media_type)
     }
 
-    /// Mark a photo media ID as seen.
-    pub fn mark_photo_id_seen(&mut self, id: String) {
-        self.recent_photo_media_ids.insert(id);
+    /// Mark a hash as seen.
+    pub fn mark_hash_seen(&mut self, hash: String, media_type: MediaType) {
+        self.dedup.mark_hash_seen(hash, media_type);
     }
 
-    /// Mark a video media ID as seen.
-    pub fn mark_video_id_seen(&mut self, id: String) {
-        self.recent_video_media_ids.insert(id);
-    }
-
-    /// Mark an audio media ID as seen.
-    pub fn mark_audio_id_seen(&mut self, id: String) {
-        self.recent_audio_media_ids.insert(id);
-    }
-
-    /// Check if a file hash has been seen (image).
-    pub fn is_photo_hash_seen(&self, hash: &str) -> bool {
-        self.recent_photo_hashes.contains(hash)
-    }
-
-    /// Check if a file hash has been seen (video).
-    pub fn is_video_hash_seen(&self, hash: &str) -> bool {
-        self.recent_video_hashes.contains(hash)
-    }
-
-    /// Check if a file hash has been seen (audio).
-    pub fn is_audio_hash_seen(&self, hash: &str) -> bool {
-        self.recent_audio_hashes.contains(hash)
-    }
-
-    /// Mark a photo hash as seen.
-    pub fn mark_photo_hash_seen(&mut self, hash: String) {
-        self.recent_photo_hashes.insert(hash);
-    }
-
-    /// Mark a video hash as seen.
-    pub fn mark_video_hash_seen(&mut self, hash: String) {
-        self.recent_video_hashes.insert(hash);
-    }
-
-    /// Mark an audio hash as seen.
-    pub fn mark_audio_hash_seen(&mut self, hash: String) {
-        self.recent_audio_hashes.insert(hash);
+    /// Get the duplicate count.
+    pub fn duplicate_count(&self) -> u64 {
+        self.dedup.duplicates_found()
     }
 
     /// Increment duplicate count.
     pub fn increment_duplicate(&mut self) {
-        self.duplicate_count += 1;
+        self.dedup.record_duplicate();
     }
 
     /// Increment picture count.
@@ -142,6 +100,68 @@ impl DownloadState {
     pub fn total_downloaded(&self) -> u64 {
         self.pic_count + self.vid_count + self.audio_count
     }
+
+    // Legacy compatibility methods - delegate to dedup service
+
+    /// Check if a media ID has already been downloaded (image).
+    pub fn is_photo_id_seen(&self, id: &str) -> bool {
+        self.dedup.is_id_seen(id, MediaType::Image)
+    }
+
+    /// Check if a media ID has already been downloaded (video).
+    pub fn is_video_id_seen(&self, id: &str) -> bool {
+        self.dedup.is_id_seen(id, MediaType::Video)
+    }
+
+    /// Check if a media ID has already been downloaded (audio).
+    pub fn is_audio_id_seen(&self, id: &str) -> bool {
+        self.dedup.is_id_seen(id, MediaType::Audio)
+    }
+
+    /// Mark a photo media ID as seen.
+    pub fn mark_photo_id_seen(&mut self, id: String) {
+        self.dedup.mark_id_seen(id, MediaType::Image);
+    }
+
+    /// Mark a video media ID as seen.
+    pub fn mark_video_id_seen(&mut self, id: String) {
+        self.dedup.mark_id_seen(id, MediaType::Video);
+    }
+
+    /// Mark an audio media ID as seen.
+    pub fn mark_audio_id_seen(&mut self, id: String) {
+        self.dedup.mark_id_seen(id, MediaType::Audio);
+    }
+
+    /// Check if a file hash has been seen (image).
+    pub fn is_photo_hash_seen(&self, hash: &str) -> bool {
+        self.dedup.is_hash_seen(hash, MediaType::Image)
+    }
+
+    /// Check if a file hash has been seen (video).
+    pub fn is_video_hash_seen(&self, hash: &str) -> bool {
+        self.dedup.is_hash_seen(hash, MediaType::Video)
+    }
+
+    /// Check if a file hash has been seen (audio).
+    pub fn is_audio_hash_seen(&self, hash: &str) -> bool {
+        self.dedup.is_hash_seen(hash, MediaType::Audio)
+    }
+
+    /// Mark a photo hash as seen.
+    pub fn mark_photo_hash_seen(&mut self, hash: String) {
+        self.dedup.mark_hash_seen(hash, MediaType::Image);
+    }
+
+    /// Mark a video hash as seen.
+    pub fn mark_video_hash_seen(&mut self, hash: String) {
+        self.dedup.mark_hash_seen(hash, MediaType::Video);
+    }
+
+    /// Mark an audio hash as seen.
+    pub fn mark_audio_hash_seen(&mut self, hash: String) {
+        self.dedup.mark_hash_seen(hash, MediaType::Audio);
+    }
 }
 
 /// Global statistics across all creators.
@@ -158,7 +178,7 @@ pub struct GlobalState {
 impl GlobalState {
     /// Add statistics from a creator's download state.
     pub fn add_creator_stats(&mut self, state: &DownloadState) {
-        self.duplicate_count += state.duplicate_count;
+        self.duplicate_count += state.duplicate_count();
         self.pic_count += state.pic_count;
         self.vid_count += state.vid_count;
         self.audio_count += state.audio_count;

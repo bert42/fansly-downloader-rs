@@ -96,10 +96,10 @@ pub async fn download_timeline(
         // Check duplicate threshold
         if config.options.use_duplicate_threshold {
             let threshold = (total_items as f64 * DUPLICATE_THRESHOLD_PERCENT) as u64;
-            if state.duplicate_count > threshold.max(50) {
+            if state.duplicate_count() > threshold.max(50) {
                 tracing::info!(
                     "Duplicate threshold reached ({} duplicates), stopping timeline download",
-                    state.duplicate_count
+                    state.duplicate_count()
                 );
                 break;
             }

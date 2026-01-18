@@ -16,7 +16,7 @@ pub fn print_creator_stats(state: &DownloadState) {
     println!("  Pictures: {}", state.pic_count);
     println!("  Videos:   {}", state.vid_count);
     println!("  Audio:    {}", state.audio_count);
-    println!("  Skipped:  {} (duplicates)", state.duplicate_count);
+    println!("  Skipped:  {} (duplicates)", state.duplicate_count());
     println!("  Total:    {} downloaded", state.total_downloaded());
 }
 
