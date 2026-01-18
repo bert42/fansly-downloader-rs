@@ -139,3 +139,126 @@ impl Default for MediaItem {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_test_item(created_at: i64, media_id: &str, is_preview: bool) -> MediaItem {
+        MediaItem {
+            media_id: media_id.to_string(),
+            created_at,
+            mimetype: "image/jpeg".to_string(),
+            download_url: "https://example.com/image.jpg".to_string(),
+            file_extension: "jpg".to_string(),
+            resolution: 1920 * 1080,
+            height: 1080,
+            width: 1920,
+            is_preview,
+            metadata: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn test_timestamp_seconds_conversion() {
+        // Timestamp in seconds (Jan 23, 2024 12:00:00 UTC)
+        let item = create_test_item(1706011200, "123", false);
+        let filename = item.generate_filename();
+        // Should convert to milliseconds and format correctly
+        assert!(filename.starts_with("2024-01-23T12-00-00"));
+    }
+
+    #[test]
+    fn test_timestamp_milliseconds() {
+        // Timestamp already in milliseconds (Jan 23, 2024 12:00:00 UTC)
+        let item = create_test_item(1706011200000, "123", false);
+        let filename = item.generate_filename();
+        assert!(filename.starts_with("2024-01-23T12-00-00"));
+    }
+
+    #[test]
+    fn test_timestamp_boundary() {
+        // Just below the threshold (should be treated as seconds)
+        let item = create_test_item(999_999_999_999, "123", false);
+        let filename = item.generate_filename();
+        // 999999999999 seconds * 1000 = year ~33658
+        assert!(filename.contains("3365"));
+    }
+
+    #[test]
+    fn test_filename_generation_regular() {
+        let item = create_test_item(1706011200, "media123", false);
+        let filename = item.generate_filename();
+        assert_eq!(filename, "2024-01-23T12-00-00_id_media123.jpg");
+    }
+
+    #[test]
+    fn test_filename_generation_preview() {
+        let item = create_test_item(1706011200, "media123", true);
+        let filename = item.generate_filename();
+        assert_eq!(filename, "2024-01-23T12-00-00_preview_id_media123.jpg");
+    }
+
+    #[test]
+    fn test_filename_with_hash() {
+        let item = create_test_item(1706011200, "media123", false);
+        let filename = item.generate_filename_with_hash("abc123def");
+        assert_eq!(filename, "2024-01-23T12-00-00_id_media123_hash2_abc123def.jpg");
+    }
+
+    #[test]
+    fn test_media_type_detection() {
+        let mut item = create_test_item(0, "123", false);
+
+        item.mimetype = "image/jpeg".to_string();
+        assert_eq!(item.media_type(), MediaType::Image);
+
+        item.mimetype = "image/png".to_string();
+        assert_eq!(item.media_type(), MediaType::Image);
+
+        item.mimetype = "video/mp4".to_string();
+        assert_eq!(item.media_type(), MediaType::Video);
+
+        item.mimetype = "application/vnd.apple.mpegurl".to_string();
+        assert_eq!(item.media_type(), MediaType::Video);
+
+        item.mimetype = "audio/mpeg".to_string();
+        assert_eq!(item.media_type(), MediaType::Audio);
+
+        item.mimetype = "application/octet-stream".to_string();
+        assert_eq!(item.media_type(), MediaType::Unknown);
+    }
+
+    #[test]
+    fn test_is_m3u8() {
+        let mut item = create_test_item(0, "123", false);
+
+        item.mimetype = "application/vnd.apple.mpegurl".to_string();
+        assert!(item.is_m3u8());
+
+        item.mimetype = "video/mp4".to_string();
+        item.download_url = "https://example.com/video.m3u8".to_string();
+        assert!(item.is_m3u8());
+
+        item.download_url = "https://example.com/video.mp4".to_string();
+        assert!(!item.is_m3u8());
+    }
+
+    #[test]
+    fn test_effective_extension() {
+        let mut item = create_test_item(0, "123", false);
+        item.file_extension = "jpg".to_string();
+        assert_eq!(item.effective_extension(), "jpg");
+
+        item.mimetype = "application/vnd.apple.mpegurl".to_string();
+        assert_eq!(item.effective_extension(), "mp4");
+    }
+
+    #[test]
+    fn test_folder_names() {
+        assert_eq!(MediaType::Image.folder_name(), "Pictures");
+        assert_eq!(MediaType::Video.folder_name(), "Videos");
+        assert_eq!(MediaType::Audio.folder_name(), "Audio");
+        assert_eq!(MediaType::Unknown.folder_name(), "Other");
+    }
+}

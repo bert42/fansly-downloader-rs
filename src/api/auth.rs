@@ -121,4 +121,73 @@ mod tests {
         // Should be hexadecimal
         assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
     }
+
+    #[test]
+    fn test_generate_check_hash_format() {
+        // Verify the hash is generated from the correct input format
+        let hash1 = generate_check_hash("key", "/path", "device");
+        let hash2 = generate_check_hash("key", "/path", "device");
+        assert_eq!(hash1, hash2); // Same inputs should produce same hash
+
+        let hash3 = generate_check_hash("key", "/different", "device");
+        assert_ne!(hash1, hash3); // Different path should produce different hash
+    }
+
+    #[test]
+    fn test_device_id_expired_none() {
+        // None timestamp should always be considered expired
+        assert!(is_device_id_expired(None));
+    }
+
+    #[test]
+    fn test_device_id_expired_old() {
+        // Timestamp from 200 minutes ago should be expired (> 180 min)
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as i64;
+        let old_timestamp = now - (200 * 60 * 1000); // 200 minutes ago
+        assert!(is_device_id_expired(Some(old_timestamp)));
+    }
+
+    #[test]
+    fn test_device_id_not_expired() {
+        // Timestamp from 10 minutes ago should not be expired
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as i64;
+        let recent_timestamp = now - (10 * 60 * 1000); // 10 minutes ago
+        assert!(!is_device_id_expired(Some(recent_timestamp)));
+    }
+
+    #[test]
+    fn test_device_id_boundary() {
+        // Exactly 180 minutes should not be expired (boundary test)
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as i64;
+        let boundary_timestamp = now - (180 * 60 * 1000); // Exactly 180 minutes
+        assert!(!is_device_id_expired(Some(boundary_timestamp)));
+
+        // 181 minutes should be expired
+        let expired_timestamp = now - (181 * 60 * 1000);
+        assert!(is_device_id_expired(Some(expired_timestamp)));
+    }
+
+    #[test]
+    fn test_client_timestamp_has_offset() {
+        // Client timestamp should be in the future (has random offset)
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as i64;
+        let client_ts = get_client_timestamp();
+
+        // Should be at least 5000ms ahead
+        assert!(client_ts >= now + 5000);
+        // Should be at most 10000ms ahead
+        assert!(client_ts <= now + 10001);
+    }
 }

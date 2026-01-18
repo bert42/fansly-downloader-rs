@@ -15,11 +15,12 @@
 //! # Example
 //!
 //! ```no_run
-//! use fansly_downloader::{Config, FanslyApi, download_timeline, DownloadState};
+//! use std::path::Path;
+//! use fansly_downloader::{Config, FanslyApi};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let config = Config::load("config.toml")?;
+//!     let config = Config::load(Path::new("config.toml"))?;
 //!     let api = FanslyApi::new(
 //!         config.my_account.authorization_token.clone(),
 //!         config.my_account.user_agent.clone(),
