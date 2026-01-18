@@ -20,7 +20,7 @@ A Rust CLI tool to download photos, videos, and audio from Fansly creators.
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/fansly-downloader-rs.git
+git clone https://github.com/bert42/fansly-downloader-rs.git
 cd fansly-downloader-rs
 cargo build --release
 ```
@@ -72,7 +72,7 @@ show_downloads = true
 show_skipped_downloads = false
 use_duplicate_threshold = false
 timeline_retries = 1
-timeline_retry_delay = 60
+timeline_retry_delay = 10
 ```
 
 ### CLI Arguments
