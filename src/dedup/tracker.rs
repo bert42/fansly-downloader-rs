@@ -25,22 +25,20 @@ pub fn scan_existing_files(dir: &Path, state: &mut DownloadState) -> Result<()> 
 
         // Try to extract hash from filename first
         if let Some(hash) = extract_hash_from_filename(filename) {
-            // Determine media type from extension
-            let _media_type = match path.extension().and_then(|e| e.to_str()) {
+            // Determine media type from extension and insert hash
+            match path.extension().and_then(|e| e.to_str()) {
                 Some("jpg") | Some("jpeg") | Some("png") | Some("gif") | Some("webp") => {
                     state.recent_photo_hashes.insert(hash);
-                    continue;
                 }
                 Some("mp4") | Some("webm") | Some("mov") => {
                     state.recent_video_hashes.insert(hash);
-                    continue;
                 }
                 Some("mp3") | Some("m4a") | Some("ogg") | Some("wav") => {
                     state.recent_audio_hashes.insert(hash);
-                    continue;
                 }
-                _ => continue,
-            };
+                _ => {}
+            }
+            continue;
         }
 
         // Extract media ID from filename if present
@@ -56,13 +54,19 @@ pub fn scan_existing_files(dir: &Path, state: &mut DownloadState) -> Result<()> 
                         let ext = &part[dot_pos + 1..];
                         match ext {
                             "jpg" | "jpeg" | "png" | "gif" | "webp" => {
-                                state.recent_photo_media_ids.insert(potential_id.to_string());
+                                state
+                                    .recent_photo_media_ids
+                                    .insert(potential_id.to_string());
                             }
                             "mp4" | "webm" | "mov" => {
-                                state.recent_video_media_ids.insert(potential_id.to_string());
+                                state
+                                    .recent_video_media_ids
+                                    .insert(potential_id.to_string());
                             }
                             "mp3" | "m4a" | "ogg" | "wav" => {
-                                state.recent_audio_media_ids.insert(potential_id.to_string());
+                                state
+                                    .recent_audio_media_ids
+                                    .insert(potential_id.to_string());
                             }
                             _ => {}
                         }
@@ -77,7 +81,11 @@ pub fn scan_existing_files(dir: &Path, state: &mut DownloadState) -> Result<()> 
 }
 
 /// Check if a file is a duplicate based on its hash.
-pub fn is_hash_duplicate(path: &Path, state: &DownloadState, media_type: MediaType) -> Result<bool> {
+pub fn is_hash_duplicate(
+    path: &Path,
+    state: &DownloadState,
+    media_type: MediaType,
+) -> Result<bool> {
     let hash = hash_file(path, media_type)?;
 
     let is_dupe = match media_type {
@@ -91,7 +99,11 @@ pub fn is_hash_duplicate(path: &Path, state: &DownloadState, media_type: MediaTy
 }
 
 /// Add a file's hash to the state.
-pub fn add_hash_to_state(path: &Path, state: &mut DownloadState, media_type: MediaType) -> Result<String> {
+pub fn add_hash_to_state(
+    path: &Path,
+    state: &mut DownloadState,
+    media_type: MediaType,
+) -> Result<String> {
     let hash = hash_file(path, media_type)?;
 
     match media_type {

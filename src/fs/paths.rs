@@ -16,10 +16,7 @@ pub fn get_download_path(
     let base_dir = config.download_directory();
 
     // Build creator folder name
-    let creator_name = state
-        .creator_name
-        .as_deref()
-        .unwrap_or("unknown_creator");
+    let creator_name = state.creator_name.as_deref().unwrap_or("unknown_creator");
 
     let creator_folder = if config.options.use_folder_suffix {
         format!("{}_fansly", creator_name)
@@ -81,7 +78,7 @@ pub fn ensure_dir(path: &PathBuf) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{AccountConfig, Config, CreatorConfig, OptionsConfig, CacheConfig};
+    use crate::config::{AccountConfig, CacheConfig, Config, CreatorConfig, OptionsConfig};
 
     fn make_test_config() -> Config {
         Config {

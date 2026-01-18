@@ -1,7 +1,12 @@
 //! Media parsing utilities.
 
+use std::collections::HashMap;
+
 use crate::api::types::{AccountMedia, MediaDetails};
 use crate::media::item::MediaItem;
+
+/// Variant selection result: (url, mimetype, width, height, metadata).
+type VariantInfo = (String, String, u32, u32, HashMap<String, String>);
 
 /// Parse an AccountMedia into a MediaItem, selecting the best resolution.
 pub fn parse_media_info(media: &AccountMedia, include_previews: bool) -> Option<MediaItem> {
@@ -42,15 +47,13 @@ pub fn parse_media_info(media: &AccountMedia, include_previews: bool) -> Option<
 }
 
 /// Select the best resolution variant from media details.
-fn select_best_variant(
-    details: &MediaDetails,
-) -> Option<(String, String, u32, u32, std::collections::HashMap<String, String>)> {
+fn select_best_variant(details: &MediaDetails) -> Option<VariantInfo> {
     let mut best_url = None;
     let mut best_mimetype = details.mimetype.clone();
     let mut best_width = details.width.unwrap_or(0);
     let mut best_height = details.height.unwrap_or(0);
     let mut best_resolution = (best_width as u64) * (best_height as u64);
-    let mut best_metadata = std::collections::HashMap::new();
+    let mut best_metadata = HashMap::new();
 
     // Check default location
     if let Some(loc) = details.locations.first() {
@@ -115,7 +118,7 @@ fn extract_extension_from_url(url: &str) -> Option<String> {
     let ext = filename.rsplit('.').next()?;
 
     // Validate it looks like an extension (1-10 chars, alphanumeric)
-    if ext.len() >= 1 && ext.len() <= 10 && ext.chars().all(|c| c.is_ascii_alphanumeric()) {
+    if !ext.is_empty() && ext.len() <= 10 && ext.chars().all(|c| c.is_ascii_alphanumeric()) {
         Some(ext.to_lowercase())
     } else {
         None

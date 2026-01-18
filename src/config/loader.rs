@@ -187,7 +187,12 @@ impl Config {
     }
 
     /// Update cache values and save to file if path provided.
-    pub fn update_cache(&mut self, device_id: String, timestamp: i64, path: Option<&Path>) -> Result<()> {
+    pub fn update_cache(
+        &mut self,
+        device_id: String,
+        timestamp: i64,
+        path: Option<&Path>,
+    ) -> Result<()> {
         self.cache.device_id = Some(device_id);
         self.cache.device_id_timestamp = Some(timestamp);
 

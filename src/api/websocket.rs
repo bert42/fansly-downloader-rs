@@ -1,9 +1,12 @@
 //! WebSocket session management for Fansly API.
 
-use std::time::Duration;
 use futures::{SinkExt, StreamExt};
+use std::time::Duration;
 use tokio::time::timeout;
-use tokio_tungstenite::{connect_async, tungstenite::{Message, handshake::client::Request}};
+use tokio_tungstenite::{
+    connect_async,
+    tungstenite::{handshake::client::Request, Message},
+};
 
 use crate::api::types::WsSessionData;
 use crate::error::{Error, Result};
@@ -25,7 +28,10 @@ pub async fn get_session_id(token: &str, user_agent: &str) -> Result<String> {
         .header("Connection", "Upgrade")
         .header("Upgrade", "websocket")
         .header("Sec-WebSocket-Version", "13")
-        .header("Sec-WebSocket-Key", tokio_tungstenite::tungstenite::handshake::client::generate_key())
+        .header(
+            "Sec-WebSocket-Key",
+            tokio_tungstenite::tungstenite::handshake::client::generate_key(),
+        )
         .body(())
         .map_err(|e| Error::Api(format!("Failed to build WebSocket request: {}", e)))?;
 
@@ -45,7 +51,8 @@ pub async fn get_session_id(token: &str, user_agent: &str) -> Result<String> {
     write.send(Message::Text(auth_json)).await?;
 
     // Read response with timeout
-    let response = timeout(WS_TIMEOUT, read.next()).await
+    let response = timeout(WS_TIMEOUT, read.next())
+        .await
         .map_err(|_| Error::Api("WebSocket response timeout".into()))?
         .ok_or_else(|| Error::Api("WebSocket closed without response".into()))??;
 
@@ -64,7 +71,8 @@ pub async fn get_session_id(token: &str, user_agent: &str) -> Result<String> {
         }
 
         // Type 1 or other - parse session data from 'd' field
-        let d = response["d"].as_str()
+        let d = response["d"]
+            .as_str()
             .ok_or_else(|| Error::Api("Missing 'd' field in WebSocket response".into()))?;
 
         let session_data: WsSessionData = serde_json::from_str(d)?;

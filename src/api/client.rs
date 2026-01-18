@@ -67,7 +67,9 @@ impl FanslyApi {
     pub async fn get_device_id(&self) -> Result<String> {
         self.ensure_device_id().await?;
         let device_id = self.device_id.read().await;
-        device_id.clone().ok_or_else(|| Error::Api("No device ID available".into()))
+        device_id
+            .clone()
+            .ok_or_else(|| Error::Api("No device ID available".into()))
     }
 
     /// Get the current device ID timestamp.
@@ -80,7 +82,7 @@ impl FanslyApi {
         let device_id = self.device_id.read().await;
         if device_id.is_none() {
             return Err(Error::MissingConfig(
-                "device_id (get this from the 'fansly-d' cookie in your browser)".to_string()
+                "device_id (get this from the 'fansly-d' cookie in your browser)".to_string(),
             ));
         }
         Ok(())
@@ -121,7 +123,8 @@ impl FanslyApi {
         tracing::debug!("GET {}", url);
         tracing::debug!("Headers: {:?}", headers);
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .query(&[("ngsw-bypass", "true")])
             .headers(headers)
@@ -143,7 +146,11 @@ impl FanslyApi {
             return Err(Error::Authentication(format!(
                 "HTTP {}: {}",
                 status,
-                if body.is_empty() { "Authentication failed" } else { &body }
+                if body.is_empty() {
+                    "Authentication failed"
+                } else {
+                    &body
+                }
             )));
         }
 
@@ -156,8 +163,13 @@ impl FanslyApi {
         let text = response.text().await?;
         tracing::debug!("Account info response: {}", text);
 
-        let api_response: ApiResponse<AccountMeResponse> = serde_json::from_str(&text)
-            .map_err(|e| Error::Api(format!("Failed to parse account info: {} - Response: {}", e, text)))?;
+        let api_response: ApiResponse<AccountMeResponse> =
+            serde_json::from_str(&text).map_err(|e| {
+                Error::Api(format!(
+                    "Failed to parse account info: {} - Response: {}",
+                    e, text
+                ))
+            })?;
 
         if !api_response.success {
             return Err(Error::Authentication("Failed to get account info".into()));
@@ -174,8 +186,13 @@ impl FanslyApi {
         tracing::debug!("Creator account response: {}", text);
 
         // The response is an array of accounts
-        let api_response: ApiResponse<Vec<AccountInfo>> = serde_json::from_str(&text)
-            .map_err(|e| Error::Api(format!("Failed to parse creator account: {} - Response: {}", e, text)))?;
+        let api_response: ApiResponse<Vec<AccountInfo>> =
+            serde_json::from_str(&text).map_err(|e| {
+                Error::Api(format!(
+                    "Failed to parse creator account: {} - Response: {}",
+                    e, text
+                ))
+            })?;
 
         if !api_response.success || api_response.response.is_empty() {
             return Err(Error::AccountNotFound(username.to_string()));
@@ -195,8 +212,13 @@ impl FanslyApi {
         let text = response.text().await?;
         tracing::debug!("Timeline response: {}", text);
 
-        let api_response: ApiResponse<TimelineResponse> = serde_json::from_str(&text)
-            .map_err(|e| Error::Api(format!("Failed to parse timeline: {} - Response: {}", e, text)))?;
+        let api_response: ApiResponse<TimelineResponse> =
+            serde_json::from_str(&text).map_err(|e| {
+                Error::Api(format!(
+                    "Failed to parse timeline: {} - Response: {}",
+                    e, text
+                ))
+            })?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get timeline".into()));
@@ -218,12 +240,20 @@ impl FanslyApi {
                 tracing::debug!("No message groups found");
                 return Ok(Vec::new());
             }
-            return Err(Error::Api(format!("Failed to get groups: HTTP {} - {}", status, text)));
+            return Err(Error::Api(format!(
+                "Failed to get groups: HTTP {} - {}",
+                status, text
+            )));
         }
 
         // Parse successful response
-        let api_response: ApiResponse<GroupsResponse> = serde_json::from_str(&text)
-            .map_err(|e| Error::Api(format!("Failed to parse groups: {} - Response: {}", e, text)))?;
+        let api_response: ApiResponse<GroupsResponse> =
+            serde_json::from_str(&text).map_err(|e| {
+                Error::Api(format!(
+                    "Failed to parse groups: {} - Response: {}",
+                    e, text
+                ))
+            })?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get message groups".into()));
@@ -243,8 +273,13 @@ impl FanslyApi {
         let text = response.text().await?;
         tracing::debug!("Messages response: {}", text);
 
-        let api_response: ApiResponse<MessagesResponse> = serde_json::from_str(&text)
-            .map_err(|e| Error::Api(format!("Failed to parse messages: {} - Response: {}", e, text)))?;
+        let api_response: ApiResponse<MessagesResponse> =
+            serde_json::from_str(&text).map_err(|e| {
+                Error::Api(format!(
+                    "Failed to parse messages: {} - Response: {}",
+                    e, text
+                ))
+            })?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get messages".into()));
@@ -277,8 +312,13 @@ impl FanslyApi {
         let text = response.text().await?;
         tracing::debug!("Collections response: {}", text);
 
-        let api_response: ApiResponse<CollectionsResponse> = serde_json::from_str(&text)
-            .map_err(|e| Error::Api(format!("Failed to parse collections: {} - Response: {}", e, text)))?;
+        let api_response: ApiResponse<CollectionsResponse> =
+            serde_json::from_str(&text).map_err(|e| {
+                Error::Api(format!(
+                    "Failed to parse collections: {} - Response: {}",
+                    e, text
+                ))
+            })?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get collections".into()));
@@ -301,8 +341,14 @@ impl FanslyApi {
         tracing::debug!("Media info response length: {} bytes", text.len());
 
         // Response is directly an array: {"success":true,"response":[...]}
-        let api_response: ApiResponse<Vec<AccountMedia>> = serde_json::from_str(&text)
-            .map_err(|e| Error::Api(format!("Failed to parse media info: {} - Response: {}", e, &text[..text.len().min(500)])))?;
+        let api_response: ApiResponse<Vec<AccountMedia>> =
+            serde_json::from_str(&text).map_err(|e| {
+                Error::Api(format!(
+                    "Failed to parse media info: {} - Response: {}",
+                    e,
+                    &text[..text.len().min(500)]
+                ))
+            })?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get media info".into()));
@@ -313,7 +359,8 @@ impl FanslyApi {
 
     /// Download a file from a URL (with optional streaming).
     pub async fn download_file(&self, url: &str) -> Result<Response> {
-        let response = self.client
+        let response = self
+            .client
             .get(url)
             .header(header::USER_AGENT, &self.user_agent)
             .send()

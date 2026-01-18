@@ -45,7 +45,7 @@ fn rshift32(value: i32, bits: i32) -> i32 {
 ///
 /// Format: cyrb53(check_key + "_" + url_path + "_" + device_id)
 pub fn generate_check_hash(check_key: &str, url_path: &str, device_id: &str) -> String {
-    let input = format!("{}_{}_{}",  check_key, url_path, device_id);
+    let input = format!("{}_{}_{}", check_key, url_path, device_id);
     let hash = cyrb53(&input, 0);
     // Convert to hex without leading zeros
     format!("{:x}", hash)

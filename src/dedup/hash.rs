@@ -25,7 +25,8 @@ pub fn hash_file(path: &Path, media_type: MediaType) -> Result<String> {
 
 /// Compute perceptual hash for an image file.
 fn hash_image(path: &Path) -> Result<String> {
-    let image = image::open(path).map_err(|e| Error::Media(format!("Failed to open image: {}", e)))?;
+    let image =
+        image::open(path).map_err(|e| Error::Media(format!("Failed to open image: {}", e)))?;
 
     let hasher = HasherConfig::new()
         .hash_size(HASH_SIZE, HASH_SIZE)
@@ -64,8 +65,8 @@ fn hash_video(path: &Path) -> Result<String> {
             let mut remaining = Vec::new();
             reader.read_to_end(&mut remaining)?;
             if !should_skip_box(&box_type) {
-                hasher.update(&header);
-                hasher.update(&remaining);
+                hasher.update(header);
+                hasher.update(remaining);
             }
             break;
         }
@@ -84,8 +85,8 @@ fn hash_video(path: &Path) -> Result<String> {
 
         // Hash the box if it's not a metadata box
         if !should_skip_box(&box_type) {
-            hasher.update(&header);
-            hasher.update(&content);
+            hasher.update(header);
+            hasher.update(content);
         }
 
         position += box_size;
@@ -159,10 +160,7 @@ mod tests {
             extract_hash_from_filename("2024-01-01_id_123_hash2_abc123.jpg"),
             Some("abc123".to_string())
         );
-        assert_eq!(
-            extract_hash_from_filename("2024-01-01_id_123.jpg"),
-            None
-        );
+        assert_eq!(extract_hash_from_filename("2024-01-01_id_123.jpg"), None);
     }
 
     #[test]

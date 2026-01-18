@@ -1,6 +1,6 @@
 //! Configuration validation logic.
 
-use crate::config::config::Config;
+use crate::config::loader::Config;
 use crate::error::{Error, Result};
 use regex::Regex;
 
@@ -203,19 +203,19 @@ mod tests {
 
     #[test]
     fn test_valid_username() {
-        assert!(validate_usernames(&["valid_user123"]).is_ok());
-        assert!(validate_usernames(&["user-name"]).is_ok());
-        assert!(validate_usernames(&["UserName123"]).is_ok());
+        assert!(validate_usernames(["valid_user123"]).is_ok());
+        assert!(validate_usernames(["user-name"]).is_ok());
+        assert!(validate_usernames(["UserName123"]).is_ok());
     }
 
     #[test]
     fn test_invalid_username_too_short() {
-        assert!(validate_usernames(&["abc"]).is_err());
+        assert!(validate_usernames(["abc"]).is_err());
     }
 
     #[test]
     fn test_invalid_username_placeholder() {
-        assert!(validate_usernames(&["replaceme"]).is_err());
+        assert!(validate_usernames(["replaceme"]).is_err());
     }
 
     #[test]

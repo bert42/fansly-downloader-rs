@@ -99,7 +99,9 @@ async fn download_direct(
 
     let content_length = response.content_length();
     let show_progress = config.options.show_downloads
-        && content_length.map(|l| l > PROGRESS_THRESHOLD).unwrap_or(false);
+        && content_length
+            .map(|l| l > PROGRESS_THRESHOLD)
+            .unwrap_or(false);
 
     // Create progress bar if needed
     let progress = if show_progress {

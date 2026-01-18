@@ -74,17 +74,21 @@ pub async fn download_messages(
             let delay_ms = rand::thread_rng().gen_range(400..750);
             sleep(Duration::from_millis(delay_ms)).await;
 
-            let media_infos = api.get_media_info(&chunk.to_vec()).await?;
+            let media_infos = api.get_media_info(chunk).await?;
 
             for media_info in &media_infos {
-                if let Some(item) = parse_media_info(media_info, config.options.download_media_previews) {
+                if let Some(item) =
+                    parse_media_info(media_info, config.options.download_media_previews)
+                {
                     let target_dir = get_download_path(config, state, &item)?;
 
                     // Rate limiting delay between downloads
                     let delay_ms = rand::thread_rng().gen_range(400..750);
                     sleep(Duration::from_millis(delay_ms)).await;
 
-                    if let Err(e) = download_media_item(api, config, state, &item, &target_dir).await {
+                    if let Err(e) =
+                        download_media_item(api, config, state, &item, &target_dir).await
+                    {
                         tracing::warn!("Failed to download media {}: {}", item.media_id, e);
                     }
                 }

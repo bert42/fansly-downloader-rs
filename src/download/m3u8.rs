@@ -16,7 +16,11 @@ use crate::media::MediaItem;
 const MAX_CONCURRENT_SEGMENTS: usize = 4;
 
 /// Download an M3U8 stream and convert to MP4.
-pub async fn download_m3u8(api: &FanslyApi, item: &MediaItem, output_path: &Path) -> Result<PathBuf> {
+pub async fn download_m3u8(
+    api: &FanslyApi,
+    item: &MediaItem,
+    output_path: &Path,
+) -> Result<PathBuf> {
     // Ensure output has .mp4 extension
     let output_path = output_path.with_extension("mp4");
 
@@ -58,10 +62,10 @@ pub async fn download_m3u8(api: &FanslyApi, item: &MediaItem, output_path: &Path
     }
 
     // Create temp directory for segments
-    let temp_dir = output_path.parent().unwrap().join(format!(
-        ".m3u8_temp_{}",
-        uuid::Uuid::new_v4()
-    ));
+    let parent = output_path
+        .parent()
+        .ok_or_else(|| Error::M3U8("Output path has no parent directory".into()))?;
+    let temp_dir = parent.join(format!(".m3u8_temp_{}", uuid::Uuid::new_v4()));
     fs::create_dir_all(&temp_dir).await?;
 
     // Download segments concurrently
@@ -116,7 +120,6 @@ async fn download_segments(
 ) -> Result<Vec<PathBuf>> {
     let results: Vec<Result<PathBuf>> = stream::iter(segments.iter().enumerate())
         .map(|(i, url)| {
-            let api = api;
             let temp_dir = temp_dir.to_path_buf();
             async move {
                 let segment_path = temp_dir.join(format!("segment_{:05}.ts", i));
@@ -168,14 +171,25 @@ async fn concatenate_segments(segments: &[PathBuf], output: &Path) -> Result<()>
     fs::write(&concat_list, &list_content).await?;
 
     // Run ffmpeg
+    let concat_list_str = concat_list
+        .to_str()
+        .ok_or_else(|| Error::M3U8("Invalid path encoding for concat list".into()))?;
+    let output_str = output
+        .to_str()
+        .ok_or_else(|| Error::M3U8("Invalid path encoding for output".into()))?;
+
     let status = Command::new("ffmpeg")
         .args([
             "-y",
-            "-f", "concat",
-            "-safe", "0",
-            "-i", concat_list.to_str().unwrap(),
-            "-c", "copy",
-            output.to_str().unwrap(),
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            concat_list_str,
+            "-c",
+            "copy",
+            output_str,
         ])
         .stdout(Stdio::null())
         .stderr(Stdio::null())

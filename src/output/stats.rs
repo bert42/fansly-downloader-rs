@@ -9,15 +9,15 @@ pub fn print_creator_stats(state: &DownloadState) {
     let creator_name = state.creator_name.as_deref().unwrap_or("unknown");
 
     println!();
-    println!("{}", style(format!("Statistics for {}:", creator_name)).bold());
+    println!(
+        "{}",
+        style(format!("Statistics for {}:", creator_name)).bold()
+    );
     println!("  Pictures: {}", state.pic_count);
     println!("  Videos:   {}", state.vid_count);
     println!("  Audio:    {}", state.audio_count);
     println!("  Skipped:  {} (duplicates)", state.duplicate_count);
-    println!(
-        "  Total:    {} downloaded",
-        state.total_downloaded()
-    );
+    println!("  Total:    {} downloaded", state.total_downloaded());
 }
 
 /// Print global statistics across all creators.
@@ -36,10 +36,7 @@ pub fn print_global_stats(state: &GlobalState) {
     println!("  Videos:   {}", state.vid_count);
     println!("  Audio:    {}", state.audio_count);
     println!("  Skipped:  {} (duplicates)", state.duplicate_count);
-    println!(
-        "  Total:    {} downloaded",
-        state.total_downloaded()
-    );
+    println!("  Total:    {} downloaded", state.total_downloaded());
     println!("{}", style("═".repeat(50)).dim());
 }
 

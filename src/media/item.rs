@@ -1,6 +1,6 @@
 //! Media item representation.
 
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{TimeZone, Utc};
 use std::collections::HashMap;
 
 /// Type of media content.
@@ -109,8 +109,12 @@ impl MediaItem {
         } else {
             self.created_at
         };
-        let dt: DateTime<Utc> = Utc.timestamp_millis_opt(timestamp_ms).unwrap();
-        dt.format("%Y-%m-%dT%H-%M-%S").to_string()
+
+        // Handle invalid timestamps gracefully with a fallback
+        match Utc.timestamp_millis_opt(timestamp_ms) {
+            chrono::LocalResult::Single(dt) => dt.format("%Y-%m-%dT%H-%M-%S").to_string(),
+            _ => format!("unknown_{}", self.created_at),
+        }
     }
 
     /// Get effective file extension, handling M3U8 → mp4 conversion.
@@ -203,7 +207,10 @@ mod tests {
     fn test_filename_with_hash() {
         let item = create_test_item(1706011200, "media123", false);
         let filename = item.generate_filename_with_hash("abc123def");
-        assert_eq!(filename, "2024-01-23T12-00-00_id_media123_hash2_abc123def.jpg");
+        assert_eq!(
+            filename,
+            "2024-01-23T12-00-00_id_media123_hash2_abc123def.jpg"
+        );
     }
 
     #[test]

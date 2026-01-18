@@ -47,7 +47,10 @@ pub async fn download_timeline(
             empty_response_count += 1;
 
             if empty_response_count > config.options.timeline_retries {
-                tracing::debug!("No more timeline content after {} retries", empty_response_count - 1);
+                tracing::debug!(
+                    "No more timeline content after {} retries",
+                    empty_response_count - 1
+                );
                 break;
             }
 
@@ -69,17 +72,21 @@ pub async fn download_timeline(
             let delay_ms = rand::thread_rng().gen_range(400..750);
             sleep(Duration::from_millis(delay_ms)).await;
 
-            let media_infos = api.get_media_info(&chunk.to_vec()).await?;
+            let media_infos = api.get_media_info(chunk).await?;
 
             for media_info in &media_infos {
-                if let Some(item) = parse_media_info(media_info, config.options.download_media_previews) {
+                if let Some(item) =
+                    parse_media_info(media_info, config.options.download_media_previews)
+                {
                     let target_dir = get_download_path(config, state, &item)?;
 
                     // Rate limiting delay between downloads
                     let delay_ms = rand::thread_rng().gen_range(400..750);
                     sleep(Duration::from_millis(delay_ms)).await;
 
-                    if let Err(e) = download_media_item(api, config, state, &item, &target_dir).await {
+                    if let Err(e) =
+                        download_media_item(api, config, state, &item, &target_dir).await
+                    {
                         tracing::warn!("Failed to download media {}: {}", item.media_id, e);
                     }
                 }

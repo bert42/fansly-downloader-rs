@@ -49,13 +49,9 @@ async fn run() -> Result<()> {
 
     // Set up logging
     let log_level = if args.debug { "debug" } else { "info" };
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new(log_level));
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(log_level));
 
-    fmt()
-        .with_env_filter(filter)
-        .with_target(false)
-        .init();
+    fmt().with_env_filter(filter).with_target(false).init();
 
     // Print banner
     print_banner();
@@ -107,7 +103,10 @@ async fn run() -> Result<()> {
     let account_info = api.get_client_account_info().await?;
     print_info(&format!(
         "Logged in as: {}",
-        account_info.display_name.as_deref().unwrap_or(&account_info.username)
+        account_info
+            .display_name
+            .as_deref()
+            .unwrap_or(&account_info.username)
     ));
 
     // Update cached device ID

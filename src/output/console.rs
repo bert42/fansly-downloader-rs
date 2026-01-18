@@ -38,11 +38,7 @@ pub fn print_banner() {
 }
 
 /// Print configuration summary.
-pub fn print_config_summary(
-    creators: &[String],
-    download_mode: &str,
-    download_dir: &str,
-) {
+pub fn print_config_summary(creators: &[String], download_mode: &str, download_dir: &str) {
     println!();
     println!("{}", style("Configuration:").bold());
     println!("  Creators: {}", creators.join(", "));
