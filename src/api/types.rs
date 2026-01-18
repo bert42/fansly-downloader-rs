@@ -10,6 +10,12 @@ pub struct ApiResponse<T> {
     pub response: T,
 }
 
+/// Account info wrapper for /account/me endpoint.
+#[derive(Debug, Clone, Deserialize)]
+pub struct AccountMeResponse {
+    pub account: AccountInfo,
+}
+
 /// Account information response.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -44,7 +44,7 @@ impl FanslyApi {
             .map_err(|e| Error::Api(format!("Failed to create HTTP client: {}", e)))?;
 
         // Get WebSocket session ID
-        let session_id = get_session_id(&token).await?;
+        let session_id = get_session_id(&token, &user_agent).await?;
 
         let api = Self {
             client,
@@ -152,22 +152,29 @@ impl FanslyApi {
     /// Get client account information (validates token).
     pub async fn get_client_account_info(&self) -> Result<AccountInfo> {
         let response = self.get("/api/v1/account/me").await?;
-        let api_response: ApiResponse<AccountInfo> = response.json().await?;
+        let text = response.text().await?;
+        tracing::debug!("Account info response: {}", text);
+
+        let api_response: ApiResponse<AccountMeResponse> = serde_json::from_str(&text)
+            .map_err(|e| Error::Api(format!("Failed to parse account info: {} - Response: {}", e, text)))?;
 
         if !api_response.success {
             return Err(Error::Authentication("Failed to get account info".into()));
         }
 
-        Ok(api_response.response)
+        Ok(api_response.response.account)
     }
 
     /// Get creator account information by username.
     pub async fn get_creator_account_info(&self, username: &str) -> Result<AccountInfo> {
         let path = format!("/api/v1/account?usernames={}", username);
         let response = self.get(&path).await?;
+        let text = response.text().await?;
+        tracing::debug!("Creator account response: {}", text);
 
         // The response is an array of accounts
-        let api_response: ApiResponse<Vec<AccountInfo>> = response.json().await?;
+        let api_response: ApiResponse<Vec<AccountInfo>> = serde_json::from_str(&text)
+            .map_err(|e| Error::Api(format!("Failed to parse creator account: {} - Response: {}", e, text)))?;
 
         if !api_response.success || api_response.response.is_empty() {
             return Err(Error::AccountNotFound(username.to_string()));
@@ -184,7 +191,11 @@ impl FanslyApi {
         );
 
         let response = self.get(&path).await?;
-        let api_response: ApiResponse<TimelineResponse> = response.json().await?;
+        let text = response.text().await?;
+        tracing::debug!("Timeline response: {}", text);
+
+        let api_response: ApiResponse<TimelineResponse> = serde_json::from_str(&text)
+            .map_err(|e| Error::Api(format!("Failed to parse timeline: {} - Response: {}", e, text)))?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get timeline".into()));
@@ -196,7 +207,11 @@ impl FanslyApi {
     /// Get message groups.
     pub async fn get_groups(&self) -> Result<Vec<MessageGroup>> {
         let response = self.get("/api/v1/group").await?;
-        let api_response: ApiResponse<GroupsResponse> = response.json().await?;
+        let text = response.text().await?;
+        tracing::debug!("Groups response: {}", text);
+
+        let api_response: ApiResponse<GroupsResponse> = serde_json::from_str(&text)
+            .map_err(|e| Error::Api(format!("Failed to parse groups: {} - Response: {}", e, text)))?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get message groups".into()));
@@ -213,7 +228,11 @@ impl FanslyApi {
         );
 
         let response = self.get(&path).await?;
-        let api_response: ApiResponse<MessagesResponse> = response.json().await?;
+        let text = response.text().await?;
+        tracing::debug!("Messages response: {}", text);
+
+        let api_response: ApiResponse<MessagesResponse> = serde_json::from_str(&text)
+            .map_err(|e| Error::Api(format!("Failed to parse messages: {} - Response: {}", e, text)))?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get messages".into()));
@@ -227,7 +246,11 @@ impl FanslyApi {
         let path = format!("/api/v1/post?ids={}", post_id);
 
         let response = self.get(&path).await?;
-        let api_response: ApiResponse<PostResponse> = response.json().await?;
+        let text = response.text().await?;
+        tracing::debug!("Post response: {}", text);
+
+        let api_response: ApiResponse<PostResponse> = serde_json::from_str(&text)
+            .map_err(|e| Error::Api(format!("Failed to parse post: {} - Response: {}", e, text)))?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get post".into()));
@@ -239,7 +262,11 @@ impl FanslyApi {
     /// Get media collections (purchased items).
     pub async fn get_collections(&self) -> Result<Vec<MediaOrder>> {
         let response = self.get("/api/v1/account/media/orders/").await?;
-        let api_response: ApiResponse<CollectionsResponse> = response.json().await?;
+        let text = response.text().await?;
+        tracing::debug!("Collections response: {}", text);
+
+        let api_response: ApiResponse<CollectionsResponse> = serde_json::from_str(&text)
+            .map_err(|e| Error::Api(format!("Failed to parse collections: {} - Response: {}", e, text)))?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get collections".into()));
@@ -258,13 +285,18 @@ impl FanslyApi {
         let path = format!("/api/v1/account/media?ids={}", ids_str);
 
         let response = self.get(&path).await?;
-        let api_response: ApiResponse<MediaInfoResponse> = response.json().await?;
+        let text = response.text().await?;
+        tracing::debug!("Media info response length: {} bytes", text.len());
+
+        // Response is directly an array: {"success":true,"response":[...]}
+        let api_response: ApiResponse<Vec<AccountMedia>> = serde_json::from_str(&text)
+            .map_err(|e| Error::Api(format!("Failed to parse media info: {} - Response: {}", e, &text[..text.len().min(500)])))?;
 
         if !api_response.success {
             return Err(Error::Api("Failed to get media info".into()));
         }
 
-        Ok(api_response.response.account_media)
+        Ok(api_response.response)
     }
 
     /// Download a file from a URL (with optional streaming).
