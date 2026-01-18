@@ -38,6 +38,10 @@ pub enum Error {
     #[error("Duplicate threshold exceeded ({0} duplicates)")]
     DuplicateThreshold(u64),
 
+    // File system errors
+    #[error("Invalid filename (path traversal attempt): {0}")]
+    InvalidFilename(String),
+
     // Media errors
     #[error("Invalid media: {0}")]
     Media(String),

@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use crate::config::{Config, DownloadType};
 use crate::download::DownloadState;
 use crate::error::Result;
+use crate::fs::naming::sanitize_path_component;
 use crate::media::MediaItem;
 
 /// Get the download path for a media item.
@@ -15,13 +16,14 @@ pub fn get_download_path(
 ) -> Result<PathBuf> {
     let base_dir = config.download_directory();
 
-    // Build creator folder name
+    // Build creator folder name with sanitization to prevent path traversal
     let creator_name = state.creator_name.as_deref().unwrap_or("unknown_creator");
+    let sanitized_name = sanitize_path_component(creator_name)?;
 
     let creator_folder = if config.options.use_folder_suffix {
-        format!("{}_fansly", creator_name)
+        format!("{}_fansly", sanitized_name)
     } else {
-        creator_name.to_string()
+        sanitized_name
     };
 
     let mut path = base_dir.join(&creator_folder);
@@ -55,16 +57,21 @@ pub fn get_download_path(
 }
 
 /// Get the base creator folder path.
-pub fn get_creator_folder(config: &Config, creator_name: &str) -> PathBuf {
+///
+/// Returns an error if the creator name contains path traversal patterns.
+pub fn get_creator_folder(config: &Config, creator_name: &str) -> Result<PathBuf> {
     let base_dir = config.download_directory();
 
+    // Sanitize creator name to prevent path traversal
+    let sanitized_name = sanitize_path_component(creator_name)?;
+
     let creator_folder = if config.options.use_folder_suffix {
-        format!("{}_fansly", creator_name)
+        format!("{}_fansly", sanitized_name)
     } else {
-        creator_name.to_string()
+        sanitized_name
     };
 
-    base_dir.join(&creator_folder)
+    Ok(base_dir.join(&creator_folder))
 }
 
 /// Ensure a directory exists, creating it if necessary.
@@ -95,11 +102,32 @@ mod tests {
         config.options.download_directory = Some(PathBuf::from("/downloads"));
         config.options.use_folder_suffix = true;
 
-        let path = get_creator_folder(&config, "testuser");
+        let path = get_creator_folder(&config, "testuser").unwrap();
         assert_eq!(path, PathBuf::from("/downloads/testuser_fansly"));
 
         config.options.use_folder_suffix = false;
-        let path = get_creator_folder(&config, "testuser");
+        let path = get_creator_folder(&config, "testuser").unwrap();
         assert_eq!(path, PathBuf::from("/downloads/testuser"));
+    }
+
+    #[test]
+    fn test_get_creator_folder_path_traversal() {
+        let mut config = make_test_config();
+        config.options.download_directory = Some(PathBuf::from("/downloads"));
+
+        // Path traversal should be rejected
+        assert!(get_creator_folder(&config, "../evil").is_err());
+        assert!(get_creator_folder(&config, "foo/../bar").is_err());
+    }
+
+    #[test]
+    fn test_get_creator_folder_sanitizes_special_chars() {
+        let mut config = make_test_config();
+        config.options.download_directory = Some(PathBuf::from("/downloads"));
+        config.options.use_folder_suffix = false;
+
+        // Special characters should be sanitized
+        let path = get_creator_folder(&config, "user/name").unwrap();
+        assert_eq!(path, PathBuf::from("/downloads/user_name"));
     }
 }

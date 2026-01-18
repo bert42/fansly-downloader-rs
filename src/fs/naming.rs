@@ -2,15 +2,95 @@
 
 use std::path::Path;
 
-/// Sanitize a filename by removing or replacing invalid characters.
-pub fn sanitize_filename(name: &str) -> String {
-    name.chars()
+use crate::error::{Error, Result};
+
+/// Validate and sanitize a filename by removing or replacing invalid characters.
+///
+/// Returns an error if the filename contains path traversal patterns.
+pub fn sanitize_filename(name: &str) -> Result<String> {
+    // Reject path traversal attempts
+    if name.contains("..") {
+        return Err(Error::InvalidFilename(format!(
+            "Path traversal detected: '{}'",
+            name
+        )));
+    }
+
+    // Also reject if it contains path separators (should be sanitized, not allowed)
+    if name.contains('/') || name.contains('\\') {
+        return Err(Error::InvalidFilename(format!(
+            "Path separators not allowed in filename: '{}'",
+            name
+        )));
+    }
+
+    // Reject null bytes
+    if name.contains('\0') {
+        return Err(Error::InvalidFilename(format!(
+            "Null bytes not allowed in filename: '{}'",
+            name
+        )));
+    }
+
+    // Sanitize remaining problematic characters
+    let sanitized: String = name
+        .chars()
+        .map(|c| match c {
+            ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
+            c if c.is_control() => '_',
+            c => c,
+        })
+        .collect();
+
+    // Reject empty or whitespace-only names
+    if sanitized.trim().is_empty() {
+        return Err(Error::InvalidFilename(
+            "Filename cannot be empty or whitespace-only".to_string(),
+        ));
+    }
+
+    Ok(sanitized)
+}
+
+/// Sanitize a path component (folder or file name) with less strict validation.
+///
+/// This is used for creator names and other path components where we want to
+/// sanitize rather than reject on certain characters.
+pub fn sanitize_path_component(name: &str) -> Result<String> {
+    // Reject path traversal attempts
+    if name.contains("..") {
+        return Err(Error::InvalidFilename(format!(
+            "Path traversal detected: '{}'",
+            name
+        )));
+    }
+
+    // Reject null bytes
+    if name.contains('\0') {
+        return Err(Error::InvalidFilename(format!(
+            "Null bytes not allowed: '{}'",
+            name
+        )));
+    }
+
+    // Sanitize problematic characters (replace with underscore)
+    let sanitized: String = name
+        .chars()
         .map(|c| match c {
             '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
             c if c.is_control() => '_',
             c => c,
         })
-        .collect()
+        .collect();
+
+    // Reject empty or whitespace-only names
+    if sanitized.trim().is_empty() {
+        return Err(Error::InvalidFilename(
+            "Path component cannot be empty or whitespace-only".to_string(),
+        ));
+    }
+
+    Ok(sanitized)
 }
 
 /// Inject a hash into a filename.
@@ -67,10 +147,56 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_sanitize_filename() {
-        assert_eq!(sanitize_filename("normal.txt"), "normal.txt");
-        assert_eq!(sanitize_filename("file:name.txt"), "file_name.txt");
-        assert_eq!(sanitize_filename("path/to/file.txt"), "path_to_file.txt");
+    fn test_sanitize_filename_valid() {
+        assert_eq!(sanitize_filename("normal.txt").unwrap(), "normal.txt");
+        assert_eq!(sanitize_filename("file:name.txt").unwrap(), "file_name.txt");
+        assert_eq!(
+            sanitize_filename("file*with?special.txt").unwrap(),
+            "file_with_special.txt"
+        );
+    }
+
+    #[test]
+    fn test_sanitize_filename_path_traversal() {
+        assert!(sanitize_filename("../etc/passwd").is_err());
+        assert!(sanitize_filename("..\\windows\\system32").is_err());
+        assert!(sanitize_filename("foo/../bar").is_err());
+    }
+
+    #[test]
+    fn test_sanitize_filename_path_separators() {
+        assert!(sanitize_filename("path/to/file.txt").is_err());
+        assert!(sanitize_filename("path\\to\\file.txt").is_err());
+    }
+
+    #[test]
+    fn test_sanitize_filename_null_bytes() {
+        assert!(sanitize_filename("file\0name.txt").is_err());
+    }
+
+    #[test]
+    fn test_sanitize_filename_empty() {
+        assert!(sanitize_filename("").is_err());
+        assert!(sanitize_filename("   ").is_err());
+    }
+
+    #[test]
+    fn test_sanitize_path_component_valid() {
+        assert_eq!(
+            sanitize_path_component("creator_name").unwrap(),
+            "creator_name"
+        );
+        // Path separators are sanitized (not rejected) in path components
+        assert_eq!(
+            sanitize_path_component("path/to/name").unwrap(),
+            "path_to_name"
+        );
+    }
+
+    #[test]
+    fn test_sanitize_path_component_traversal() {
+        assert!(sanitize_path_component("../evil").is_err());
+        assert!(sanitize_path_component("foo/../bar").is_err());
     }
 
     #[test]

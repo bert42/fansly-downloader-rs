@@ -162,8 +162,8 @@ async fn process_creator(
     state.following = creator_info.following.unwrap_or(false);
     state.subscribed = creator_info.subscribed.unwrap_or(false);
 
-    // Set base path
-    state.base_path = Some(get_creator_folder(config, creator_name));
+    // Set base path (with path traversal protection)
+    state.base_path = Some(get_creator_folder(config, creator_name)?);
 
     // Execute based on download mode
     match config.options.download_mode {
