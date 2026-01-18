@@ -1,0 +1,68 @@
+# Fansly Downloader RS Configuration
+# Copy this file to config.toml and fill in your credentials.
+
+# Target creator(s) to download from
+[targeted_creator]
+# Single creator
+usernames = ["creator_username"]
+# Multiple creators (uncomment and modify):
+# usernames = ["creator1", "creator2", "creator3"]
+
+# Your Fansly account credentials
+[my_account]
+# Your Fansly authorization token (from browser developer tools)
+# Look for the 'authorization' header in network requests
+authorization_token = "YOUR_TOKEN_HERE"
+
+# Your browser's user agent string
+# You can find this by searching "what is my user agent" in your browser
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+# Fansly check key (usually doesn't need to be changed)
+check_key = "qybZy9-fyszis-bybxyf"
+
+# Download options
+[options]
+# Download mode: normal, timeline, messages, single, collection
+download_mode = "normal"
+
+# Base directory for downloads (use current directory if not specified)
+# download_directory = "/path/to/downloads"
+
+# Include preview media (for content you don't have access to)
+download_media_previews = true
+
+# Put messages in a separate folder
+separate_messages = true
+
+# Put timeline in a separate folder
+separate_timeline = true
+
+# Put previews in a separate folder
+separate_previews = false
+
+# Add "_fansly" suffix to creator folders
+use_folder_suffix = true
+
+# Show download progress
+show_downloads = true
+
+# Show skipped file information
+show_skipped_downloads = true
+
+# Stop downloading after encountering too many duplicates
+use_duplicate_threshold = false
+
+# Number of retry attempts when timeline returns empty
+timeline_retries = 1
+
+# Seconds to wait between timeline retries
+timeline_delay_seconds = 60
+
+# Post ID for single post download mode (only used when download_mode = "single")
+# single_post_id = "1234567890123"
+
+# Cached values (automatically managed, don't modify manually)
+[cache]
+# device_id = "..."
+# device_id_timestamp = 0
