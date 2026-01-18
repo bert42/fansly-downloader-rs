@@ -1,12 +1,11 @@
 //! Fansly API HTTP client.
 
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use reqwest::{header, Client, Response};
 use tokio::sync::RwLock;
 
-use crate::api::auth::{generate_check_hash, get_client_timestamp, is_device_id_expired};
+use crate::api::auth::{generate_check_hash, get_client_timestamp};
 use crate::api::types::*;
 use crate::api::websocket::get_session_id;
 use crate::error::{Error, Result};
@@ -76,41 +75,15 @@ impl FanslyApi {
         *self.device_id_timestamp.read().await
     }
 
-    /// Ensure we have a valid device ID, fetching a new one if needed.
+    /// Ensure we have a valid device ID.
     async fn ensure_device_id(&self) -> Result<()> {
-        let timestamp = *self.device_id_timestamp.read().await;
-
-        if is_device_id_expired(timestamp) {
-            let new_device_id = self.fetch_device_id().await?;
-            let new_timestamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as i64;
-
-            *self.device_id.write().await = Some(new_device_id);
-            *self.device_id_timestamp.write().await = Some(new_timestamp);
+        let device_id = self.device_id.read().await;
+        if device_id.is_none() {
+            return Err(Error::MissingConfig(
+                "device_id (get this from the 'fansly-d' cookie in your browser)".to_string()
+            ));
         }
-
         Ok(())
-    }
-
-    /// Fetch a new device ID from the API.
-    async fn fetch_device_id(&self) -> Result<String> {
-        let url = format!("{}/api/v1/device/id", API_BASE);
-
-        let response = self.client
-            .get(&url)
-            .header(header::AUTHORIZATION, &self.token)
-            .send()
-            .await?;
-
-        let api_response: ApiResponse<DeviceIdResponse> = response.json().await?;
-
-        if !api_response.success {
-            return Err(Error::Api("Failed to get device ID".into()));
-        }
-
-        Ok(api_response.response.device_id)
     }
 
     /// Build common headers for API requests.

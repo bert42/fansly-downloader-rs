@@ -36,6 +36,10 @@ pub struct Args {
     #[arg(short = 'k', long = "check-key", env = "FANSLY_CHECK_KEY")]
     pub check_key: Option<String>,
 
+    /// Device ID (from fansly-d cookie or Fansly-Client-Id header).
+    #[arg(long = "device-id", env = "FANSLY_DEVICE_ID")]
+    pub device_id: Option<String>,
+
     /// Download mode.
     #[arg(long, value_enum)]
     pub mode: Option<DownloadModeArg>,
@@ -128,6 +132,10 @@ impl Args {
 
         if let Some(check_key) = self.check_key {
             config.my_account.check_key = check_key;
+        }
+
+        if let Some(device_id) = self.device_id {
+            config.cache.device_id = Some(device_id);
         }
 
         // Override options if provided

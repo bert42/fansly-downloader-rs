@@ -124,7 +124,8 @@ impl Default for OptionsConfig {
 /// Cached values configuration.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CacheConfig {
-    /// Cached device ID.
+    /// Device ID from browser (fansly-d cookie value).
+    /// This is required for authentication.
     pub device_id: Option<String>,
 
     /// Timestamp when device ID was obtained.

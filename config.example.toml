@@ -62,7 +62,8 @@ timeline_delay_seconds = 60
 # Post ID for single post download mode (only used when download_mode = "single")
 # single_post_id = "1234567890123"
 
-# Cached values (automatically managed, don't modify manually)
+# Device ID (required) - get this from your browser
 [cache]
-# device_id = "..."
-# device_id_timestamp = 0
+# Find this in your browser cookies as 'fansly-d'
+# Or look for 'Fansly-Client-Id' header in network requests
+device_id = "YOUR_DEVICE_ID_HERE"

@@ -33,13 +33,22 @@ The binary will be at `./target/release/fansly-downloader`.
 
 ### Getting Your Credentials
 
-You'll need at minimum your authorization token from your browser:
+You'll need two pieces of information from your browser:
 
 1. **Authorization Token** (required): Your Fansly session token
-2. **User Agent** (optional): Your browser's user agent string - a default is provided
-3. **Check Key** (optional): Fansly's request signing key - a default is provided
+2. **Device ID** (required): Your browser's device ID from the `fansly-d` cookie
+3. **User Agent** (optional): Your browser's user agent string - a default is provided
+4. **Check Key** (optional): Fansly's request signing key - a default is provided
 
-To obtain your token, open your browser's Developer Tools (F12) while on Fansly, go to the Network tab, and inspect any API request headers for the `authorization` header.
+### How to Get These Values
+
+1. Open **Developer Tools** (F12) while on Fansly
+2. Go to the **Network** tab
+3. Filter for `apiv3` and click any request
+4. Find in **Request Headers**:
+   - `authorization` → your token
+   - `Fansly-Client-Id` → your device ID
+5. Or go to **Application** tab → **Cookies** → look for `fansly-d` cookie value
 
 ### Config File (Recommended)
 
@@ -52,6 +61,9 @@ authorization_token = "your_token_here"
 
 [targeted_creator]
 usernames = ["creator1", "creator2"]
+
+[cache]
+device_id = "your_device_id_here"
 
 [options]
 download_directory = "./downloads"
