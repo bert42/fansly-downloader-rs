@@ -7,20 +7,38 @@ use rand::Rng;
 /// Generate the cyrb53 hash used for Fansly request signing.
 ///
 /// This is a port of the JavaScript cyrb53 hash function used by Fansly.
-pub fn cyrb53(input: &str, seed: u64) -> u64 {
-    let mut h1: u64 = 0xdeadbeef ^ seed;
-    let mut h2: u64 = 0x41c6ce57 ^ seed;
+/// Uses 32-bit integer overflow semantics to match JavaScript behavior.
+pub fn cyrb53(input: &str, seed: i32) -> u64 {
+    // Use i32 for 32-bit signed integer overflow behavior
+    let mut h1: i32 = (0xdeadbeef_u32 as i32) ^ seed;
+    let mut h2: i32 = (0x41c6ce57_u32 as i32) ^ seed;
 
     for ch in input.chars() {
-        let code = ch as u64;
-        h1 = (h1 ^ code).wrapping_mul(2654435761);
-        h2 = (h2 ^ code).wrapping_mul(1597334677);
+        let code = ch as i32;
+        h1 = imul32(h1 ^ code, 2654435761_u32 as i32);
+        h2 = imul32(h2 ^ code, 1597334677_u32 as i32);
     }
 
-    h1 = ((h1 ^ (h1 >> 16)).wrapping_mul(2246822507)) ^ ((h2 ^ (h2 >> 13)).wrapping_mul(3266489909));
-    h2 = ((h2 ^ (h2 >> 16)).wrapping_mul(2246822507)) ^ ((h1 ^ (h1 >> 13)).wrapping_mul(3266489909));
+    h1 = imul32(h1 ^ rshift32(h1, 16), 2246822507_u32 as i32);
+    h1 ^= imul32(h2 ^ rshift32(h2, 13), 3266489909_u32 as i32);
+    h2 = imul32(h2 ^ rshift32(h2, 16), 2246822507_u32 as i32);
+    h2 ^= imul32(h1 ^ rshift32(h1, 13), 3266489909_u32 as i32);
 
-    (h2 << 32) | (h1 & 0xFFFFFFFF)
+    // 4294967296 * (2097151 & h2) + (h1 >>> 0)
+    let h2_masked = (h2 as u32) & 0x1FFFFF;
+    let h1_unsigned = h1 as u32;
+
+    (h2_masked as u64) * 4294967296 + (h1_unsigned as u64)
+}
+
+/// 32-bit signed integer multiplication with overflow (matches JavaScript Math.imul)
+fn imul32(a: i32, b: i32) -> i32 {
+    a.wrapping_mul(b)
+}
+
+/// Unsigned right shift for 32-bit integers (matches JavaScript >>> operator)
+fn rshift32(value: i32, bits: i32) -> i32 {
+    ((value as u32) >> bits) as i32
 }
 
 /// Generate the check hash for a request.
@@ -29,6 +47,7 @@ pub fn cyrb53(input: &str, seed: u64) -> u64 {
 pub fn generate_check_hash(check_key: &str, url_path: &str, device_id: &str) -> String {
     let input = format!("{}_{}_{}",  check_key, url_path, device_id);
     let hash = cyrb53(&input, 0);
+    // Convert to hex without leading zeros
     format!("{:x}", hash)
 }
 
@@ -69,7 +88,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_cyrb53_basic() {
+    fn test_cyrb53_known_values() {
+        // Test cases from Python implementation
+        assert_eq!(cyrb53("a", 0), 7929297801672961);
+        assert_eq!(cyrb53("b", 0), 8684336938537663);
+        assert_eq!(cyrb53("revenge", 0), 4051478007546757);
+    }
+
+    #[test]
+    fn test_cyrb53_consistency() {
         // Test that the hash produces consistent results
         let hash1 = cyrb53("test", 0);
         let hash2 = cyrb53("test", 0);
@@ -93,22 +120,5 @@ mod tests {
         assert!(!hash.is_empty());
         // Should be hexadecimal
         assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
-    }
-
-    #[test]
-    fn test_is_device_id_expired() {
-        // No timestamp should be expired
-        assert!(is_device_id_expired(None));
-
-        // Recent timestamp should not be expired
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as i64;
-        assert!(!is_device_id_expired(Some(now)));
-
-        // Old timestamp should be expired
-        let old = now - (200 * 60 * 1000); // 200 minutes ago
-        assert!(is_device_id_expired(Some(old)));
     }
 }

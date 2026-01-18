@@ -118,20 +118,32 @@ impl FanslyApi {
         let url = format!("{}{}", API_BASE, path);
         let headers = self.build_headers(path).await?;
 
+        tracing::debug!("GET {}", url);
+        tracing::debug!("Headers: {:?}", headers);
+
         let response = self.client
             .get(&url)
             .headers(headers)
             .send()
             .await?;
 
+        let status = response.status();
+        tracing::debug!("Response status: {}", status);
+
         // Check for rate limiting
-        if response.status() == 429 {
+        if status == 429 {
             return Err(Error::RateLimited(60));
         }
 
         // Check for auth errors
-        if response.status() == 401 {
-            return Err(Error::Authentication("Invalid or expired token".into()));
+        if status == 401 || status == 403 {
+            let body = response.text().await.unwrap_or_default();
+            tracing::error!("Auth error response: {}", body);
+            return Err(Error::Authentication(format!(
+                "HTTP {}: {}",
+                status,
+                if body.is_empty() { "Authentication failed" } else { &body }
+            )));
         }
 
         Ok(response)
