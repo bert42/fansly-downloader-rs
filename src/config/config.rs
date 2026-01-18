@@ -37,6 +37,7 @@ pub struct AccountConfig {
     pub authorization_token: String,
 
     /// Browser user agent string.
+    #[serde(default = "default_user_agent")]
     pub user_agent: String,
 
     /// Fansly check key for request signing.
@@ -134,6 +135,10 @@ fn default_check_key() -> String {
     "qybZy9-fyszis-bybxyf".to_string()
 }
 
+fn default_user_agent() -> String {
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36".to_string()
+}
+
 fn default_true() -> bool {
     true
 }
@@ -197,7 +202,7 @@ impl Default for AccountConfig {
     fn default() -> Self {
         Self {
             authorization_token: String::new(),
-            user_agent: String::new(),
+            user_agent: default_user_agent(),
             check_key: default_check_key(),
         }
     }

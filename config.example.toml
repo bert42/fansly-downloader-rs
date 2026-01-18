@@ -14,9 +14,9 @@ usernames = ["creator_username"]
 # Look for the 'authorization' header in network requests
 authorization_token = "YOUR_TOKEN_HERE"
 
-# Your browser's user agent string
+# Your browser's user agent string (optional, has a sensible default)
 # You can find this by searching "what is my user agent" in your browser
-user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+# user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
 
 # Fansly check key (usually doesn't need to be changed)
 check_key = "qybZy9-fyszis-bybxyf"

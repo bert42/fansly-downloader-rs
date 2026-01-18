@@ -33,13 +33,13 @@ The binary will be at `./target/release/fansly-downloader`.
 
 ### Getting Your Credentials
 
-You'll need three pieces of information from your browser:
+You'll need at minimum your authorization token from your browser:
 
-1. **Authorization Token**: Your Fansly session token
-2. **User Agent**: Your browser's user agent string
-3. **Check Key**: Fansly's request signing key
+1. **Authorization Token** (required): Your Fansly session token
+2. **User Agent** (optional): Your browser's user agent string - a default is provided
+3. **Check Key** (optional): Fansly's request signing key - a default is provided
 
-To obtain these, open your browser's Developer Tools (F12) while on Fansly, go to the Network tab, and inspect any API request headers.
+To obtain your token, open your browser's Developer Tools (F12) while on Fansly, go to the Network tab, and inspect any API request headers for the `authorization` header.
 
 ### Config File (Recommended)
 
@@ -48,8 +48,7 @@ Create a `config.toml` file:
 ```toml
 [my_account]
 authorization_token = "your_token_here"
-user_agent = "Mozilla/5.0 ..."
-check_key = "your_check_key"
+# user_agent and check_key are optional (sensible defaults provided)
 
 [targeted_creator]
 usernames = ["creator1", "creator2"]
@@ -74,8 +73,6 @@ All config options can be overridden via CLI:
 fansly-downloader \
   --user creator_name \
   --token YOUR_TOKEN \
-  --user-agent "YOUR_USER_AGENT" \
-  --check-key YOUR_CHECK_KEY \
   --directory ./downloads \
   --mode timeline
 ```
@@ -168,4 +165,4 @@ MIT License
 
 ## Acknowledgments
 
-- Based on [fansly-downloader-ng](https://github.com/prof79/fansly-downloader-ng) by prof79
+- Inspired by [fansly-downloader-ng](https://github.com/prof79/fansly-downloader-ng) by prof79
