@@ -176,3 +176,8 @@ MIT License
 ## Acknowledgments
 
 - Inspired by [fansly-downloader-ng](https://github.com/prof79/fansly-downloader-ng) by prof79
+
+---
+
+> [!CAUTION]
+> **Disclaimer**: This tool is not affiliated with Fansly or Select Media LLC. Use at your own risk. The developer of this script is not responsible for the end users' actions or any outcomes that may be taken upon the end users' account. Use at your own risk.
