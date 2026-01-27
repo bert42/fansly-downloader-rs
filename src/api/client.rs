@@ -267,10 +267,11 @@ impl FanslyApi {
 
     /// Get messages from a group.
     pub async fn get_messages(&self, group_id: &str, cursor: &str) -> Result<MessagesResponse> {
-        let path = format!(
-            "/api/v1/message?groupId={}&limit=25&before={}",
-            group_id, cursor
-        );
+        let path = if cursor == "0" {
+            format!("/api/v1/message?groupId={}&limit=25", group_id)
+        } else {
+            format!("/api/v1/message?groupId={}&limit=25&before={}", group_id, cursor)
+        };
 
         let response = self.get(&path).await?;
         let text = response.text().await?;
@@ -311,7 +312,7 @@ impl FanslyApi {
 
     /// Get media collections (purchased items).
     pub async fn get_collections(&self) -> Result<Vec<MediaOrder>> {
-        let response = self.get("/api/v1/account/media/orders/").await?;
+        let response = self.get("/api/v1/account/media/orders/?limit=9999&offset=0").await?;
         let text = response.text().await?;
         tracing::debug!("Collections response: {}", text);
 
