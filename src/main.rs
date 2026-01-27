@@ -168,13 +168,18 @@ async fn process_creator(
     // Execute based on download mode
     match config.options.download_mode {
         DownloadMode::Normal => {
-            // Download both timeline and messages
+            // Download timeline, messages, and collections
             state.download_type = DownloadType::Timeline;
             download_timeline(api, config, &mut state).await?;
 
             state.download_type = DownloadType::Messages;
             if let Err(e) = download_messages(api, config, &mut state).await {
                 print_warning(&format!("Messages download failed: {}", e));
+            }
+
+            state.download_type = DownloadType::Collections;
+            if let Err(e) = download_collections(api, config, &mut state).await {
+                print_warning(&format!("Collections download failed: {}", e));
             }
         }
         DownloadMode::Timeline => {
