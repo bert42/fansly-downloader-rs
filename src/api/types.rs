@@ -200,8 +200,12 @@ pub struct CollectionsResponse {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaOrder {
-    pub id: String,
+    pub account_id: String,
     pub account_media_id: String,
+    #[serde(rename = "type")]
+    pub order_type: i32,
+    pub created_at: i64,
+    pub bundle_id: Option<String>,
 }
 
 /// Device ID response.
